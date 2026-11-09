@@ -15,8 +15,8 @@ window.app_settings = {
     base_address: "https://A_REMPLACER.onrender.com",
     ws_base_address: "wss://A_REMPLACER.onrender.com"
   },
-  app_base_adress: "https://A_REMPLACER.github.io",
-  context: "A_REMPLACER",
+  app_base_adress: "https://de-zhou.github.io/Space-Gold/",
+  context: "Space Gold",
   one_time_link: true,
   downloadAllToLocalStorage: false,
   minDailyDataPointsToStoreLocally: 20,
