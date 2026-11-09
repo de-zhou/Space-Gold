@@ -126,10 +126,10 @@ function showOnlyPortraitMessage() {
         supportOnlyPortraitMessageElement.setAttribute("id", 'support_only_portrait_msg')
         supportOnlyPortraitMessageElement.classList.add('centered')
         supportOnlyPortraitMessageElement.classList.add('error_message')
-        supportOnlyPortraitMessageElement.appendChild(document.createTextNode("The app works only in a vertical alignment."))
+        supportOnlyPortraitMessageElement.appendChild(document.createTextNode("L'application fonctionne uniquement sous un format vertical."))
         supportOnlyPortraitMessageElement.appendChild(document.createElement("br"))
         supportOnlyPortraitMessageElement.appendChild(document.createElement("br"))
-        supportOnlyPortraitMessageElement.appendChild(document.createTextNode("Please rotate the device."))
+        supportOnlyPortraitMessageElement.appendChild(document.createTextNode("Veuillez pivoter votre téléphone."))
         // set the text box:
         supportOnlyPortraitBoxElement = document.createElement('div');
         supportOnlyPortraitBoxElement.setAttribute("id", "support_only_portrait_box");
