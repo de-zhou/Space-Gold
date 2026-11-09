@@ -12,8 +12,8 @@
 // ============================================================================
 window.app_settings = {
   server: {
-    base_address: "https://A_REMPLACER.onrender.com",
-    ws_base_address: "wss://A_REMPLACER.onrender.com"
+    base_address: "https://space-gold.onrender.com",
+    ws_base_address: "wss://space-gold.onrender.com"
   },
   app_base_adress: "https://de-zhou.github.io/Space-Gold/",
   context: "Space Gold",
