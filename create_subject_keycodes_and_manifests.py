@@ -28,9 +28,9 @@ with open("settings.js", "r") as f:
         if "app_base_adress: " in line:
             app_base_adress = line.split('"')[1]
 
-mainAdress = app_base_adress + "/" + context_name + "/"
-commonStartAdress = mainAdress + "index.html?subId="
-commonIconsAdress = mainAdress + "icons/"
+mainAdress = app_base_adress.rstrip("/")
+commonStartAdress = mainAdress + "/index.html?subId="
+commonIconsAdress = mainAdress + "/icons/"
 
 
 # FUNCTIONS:
