@@ -117,22 +117,9 @@ function getBaselineAccumulatedReward(subData, settings) {
       // --------------------------------------------------------
       let accumulator = subData.baselineAccumulatedReward[li]
 
-      // handle COST [may need adaptation if cost is splited to entry and each press]:
-      !!subData['cost'][li] ? accumulator -= subData['cost'][li].reduce((a, b) => a + b, 0) : null;
-
       // handle REWARD:
       if (!!subData['endTime'][li] && !(!!subData.isUnderManipulation[li] && subData.manipulationToday[li] === 'devaluation')) {
         accumulator += subData['reward'][li];
-      }
-
-      // handle CAVE:
-      if (!!subData['endTime'][li] && !!subData.coin_task_finish_status[li]) {
-        // reduce cave's cost
-        accumulator -= subData.coin_task_finish_status[li].total_presses * settings.coinCollectionTask.costPerPress;
-        console.log('with cave cost: ' + accumulator)
-        // add cave's reward
-        subData.manipulationToday[li] !== 'devaluation' ? accumulator += subData.coin_task_finish_status[li].total_gold_collected * settings.coinCollectionTask.rewardPerCoinStash() : null;
-        console.log('with cave reward: ' + accumulator)
       }
 
       return !accumulator ? 0 : accumulator //prevent errors if accumulator does not get a value after all
@@ -146,22 +133,15 @@ function getBaselineAccumulatedReward(subData, settings) {
   }
 }
 
-function InitializeCost(cost_settings) {
-  if (cost_settings.isCost) { // the syntax is based on the assignReward function defined above.
-    if (!cost_settings.isVariableCost) {
-      return cost_settings.isCostPerPress ? new Array(app_settings.pressesRequired + 1).fill(cost_settings.costConstantSum) : [cost_settings.costConstantSum];
-    } else {
-      let cost = [];
-      const n_costs = cost_settings.isCostPerPress ? app_settings.pressesRequired + 1 : 1;
-      for (i = 0; i < n_costs; i++) {
-        let non_rounded_cost = Math.random() * (cost_settings.maxCostSum - cost_settings.minCostSum) + cost_settings.minCostSum;
-        cost.push(Math.round(non_rounded_cost * 100) / 100); // just making it rounded to two decimal points.
-      }
-      return cost
-    }
-  } else {
-    return [0]
-  }
+
+// Value of one reward and maximum number of daily entries, which depend on the participant's group (see settings.group_vars)
+function getGroupSetting(settings, key) {
+  try {
+    var g = setCounterBalancedStuff(data_helper.get_subject_id(), settings)[0];
+    var v = settings.group_vars[g][key];
+    if (typeof v === 'number') { return v; }
+  } catch (e) { }
+  return null;
 }
 
 function checkIfToHideOutcome(subData, hideOutcome, dayOfExperiment, isUnderManipulation, group, completeEntriesToday) {
@@ -470,9 +450,33 @@ var logic = {
         var resetContainer = false;
       }
     }
-    let cost = InitializeCost(settings.cost)
     let reward = isWin ? assignReward(settings.rewards) : 0; // set reward value if winning, or set to 0 if not
     reward = isLoss ? assignLoss(settings.rewards) : reward; // set reward value if winning, or set to 0 if not
+
+    // The value of a reward depends on the group (settings.group_vars[group].rewardPerWin):
+    const rewardPerWin = getGroupSetting(settings, 'rewardPerWin');
+    if (isWin && !isLoss && rewardPerWin !== null) { reward = rewardPerWin; }
+
+    // Daily limit: entries already completed today vs the maximum allowed for the group (settings.group_vars[group].dailyEntriesMax)
+    let entriesTodayBefore = 0;
+    let dailyEntriesMax = null;
+    if (!isDemo && !isFirstTime && !endExperiment) {
+      entriesTodayBefore = subData.endTime.filter((x, i) => (!!x || !!subData.outcomeTime[i]) && subData.day[i] === dayOfExperiment).length;
+      dailyEntriesMax = getGroupSetting(settings, 'dailyEntriesMax');
+    }
+    const dailyLimitReached = dailyEntriesMax !== null && entriesTodayBefore >= dailyEntriesMax;
+
+    // Minimum time between two entries of the same day (settings.group_vars[group].minMinutesBetweenEntries, counted from the end of the previous entry)
+    let minMinutesBetweenEntries = null;
+    let minutesSincePreviousEntry = null;
+    if (!isDemo && !isFirstTime && !endExperiment) {
+      minMinutesBetweenEntries = getGroupSetting(settings, 'minMinutesBetweenEntries');
+      const timesToday = subData.endTime
+        .map((x, i) => ((!!x || !!subData.outcomeTime[i]) && subData.day[i] === dayOfExperiment) ? new Date(x || subData.outcomeTime[i]).getTime() : null)
+        .filter((t) => t !== null && !isNaN(t));
+      if (timesToday.length) { minutesSincePreviousEntry = (Date.now() - Math.max(...timesToday)) / 60000; }
+    }
+    const waitRequired = !dailyLimitReached && minMinutesBetweenEntries !== null && minutesSincePreviousEntry !== null && minutesSincePreviousEntry < minMinutesBetweenEntries;
     let baselineAccumulatedReward = getBaselineAccumulatedReward(subData, settings); // Get Accumulated Reward Baseline (i.e., before this trial)
 
     var dataToSave = {
@@ -482,7 +486,6 @@ var logic = {
       isWin: isWin,
       isLoss: isLoss,
       reward: reward,
-      cost: cost,
       baselineAccumulatedReward: baselineAccumulatedReward,
       resetContainer: resetContainer,
       manipulationToday: whichManipulation,
@@ -499,6 +502,12 @@ var logic = {
       demoTrialNum: demoTrialNum,
       shouldBeExcluded: shouldBeExcluded,
       exclusionReason: exclusionReason,
+      entryNumberToday: entriesTodayBefore + 1,
+      dailyEntriesMax: dailyEntriesMax,
+      dailyLimitReached: dailyLimitReached,
+      minMinutesBetweenEntries: minMinutesBetweenEntries,
+      minutesSincePreviousEntry: minutesSincePreviousEntry,
+      waitRequired: waitRequired,
     };
     return dataToSave;
   },
@@ -511,15 +520,4 @@ var logic = {
 
     return null;
   },
-  getCost: function (runData, settings, cost_on) {
-    return settings.cost.isCost
-      && settings.cost.presentCost
-      && (runData.cost.length > cost_on)
-      && runData.cost[cost_on];
-  },
-  cost_on: {
-    entrance: 0,
-    click1: 1,
-    click2: 2
-  }
 };

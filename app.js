@@ -1,6 +1,8 @@
 async function runApp() {
 	appRunning = true; // used to determine whther a new session can start
 	clearTimeout(checkIfAppStartedRunning) // Stop checking (through the index.html that app started running on the first time)
+	var oldLimitScreen = document.getElementById('daily_limit_screen'); // remove the "daily limit" screen if it was shown by a previous run
+	if (oldLimitScreen) { oldLimitScreen.remove(); }
 	// ****************************************************************
 	//           SET & INITIALIZE STUFF:
 	// ----------------------------------------------------------------
@@ -119,6 +121,30 @@ async function runApp() {
 	// when we have uniqueEntryID, append stashed information to current sessionName
 	data_helper.appendStashedData();
 
+	// DAILY LIMIT: the participant already did all the entries allowed today -> show the "blocked" image and stop here
+	if (runData.dailyLimitReached) {
+		if (!settings.dailyLimit || settings.dailyLimit.logBlockedAttempts !== false) { // record the attempt (it is NOT counted as an entry)
+			subject_data_worker.postMessage({ subId: data_helper.get_subject_id(), day: runData.day, group: runData.group, blockedAttemptTime: startTime, blockedEntriesToday: runData.entryNumberToday - 1, dailyEntriesMax: runData.dailyEntriesMax, dataLoadingTime: (new Date) - startTime, commitSession: true });
+		}
+		dom_helper.hide('app_will_load_soon');
+		dom_helper.hide('loading_animation');
+		showDailyLimitScreen(settings);
+		appRunning = false;
+		return;
+	}
+
+	// MINIMUM TIME BETWEEN ENTRIES: it is too early for a new entry -> show the "come back later" image and stop here
+	if (runData.waitRequired) {
+		if (!settings.dailyLimit || settings.dailyLimit.logBlockedAttempts !== false) { // record the attempt (it is NOT counted as an entry)
+			subject_data_worker.postMessage({ subId: data_helper.get_subject_id(), day: runData.day, group: runData.group, waitAttemptTime: startTime, waitMinutesLeft: Math.ceil(runData.minMinutesBetweenEntries - runData.minutesSincePreviousEntry), blockedEntriesToday: runData.entryNumberToday - 1, dataLoadingTime: (new Date) - startTime, commitSession: true });
+		}
+		dom_helper.hide('app_will_load_soon');
+		dom_helper.hide('loading_animation');
+		showDailyLimitScreen(settings, 'wait');
+		appRunning = false;
+		return;
+	}
+
 	// Save the data and refer to instructions if relevant:
 	if (runData.showInstructions) {
 		subject_data_worker.postMessage({ ...runData, startInstructionsTime: startTime, dataLoadingTime: (new Date) - startTime, visibilityStateOnFirstDataSaving: document.visibilityState, commitSession: true });
@@ -135,7 +161,6 @@ async function runApp() {
 	}
 
 	// assign animation times according to settings:
-	document.getElementById('cost_indicator_1_').style.animationDuration = String(settings.durations.costAnim / 1000) + 's'
 	document.getElementById('outcome_win').style.animationDuration = String(settings.durations.outcomeAnim / 1000) + 's'
 	document.getElementById('outcome_loss').style.animationDuration = String(settings.durations.outcomeAnim / 1000) + 's'
 	document.getElementById('outcome_no_win').style.animationDuration = String(settings.durations.outcomeAnim / 1000) + 's'
@@ -164,19 +189,8 @@ async function runApp() {
 		dom_helper.show("cover");
 	}
 
-	// show cost on top right corner if needed [At entrance]
-	if (!!logic.getCost(runData, settings, logic.cost_on.entrance)) {
-		var indicator_id = dom_helper.duplicate('cost_indicator_1_');
-		dom_helper.set_text(indicator_id, "-" + logic.getCost(runData, settings, logic.cost_on.entrance));
-		dom_helper.show(indicator_id);
-		setTimeout(() => {
-			if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
-			dom_helper.hide(indicator_id)
-		}, settings.durations.costAnim)
-	}
-
-	//show spacechip landing animation:
-	dom_helper.show('spaceship');
+	// show spaceship landing animation (only if settings.showEntranceRocket is true; off in this study):
+	if (settings.showEntranceRocket) { dom_helper.show('spaceship'); }
 
 	// define top & bottom click operations
 	var lowerHalfClicked = false;
@@ -187,17 +201,6 @@ async function runApp() {
 				dom_helper.remove_css_class('lower_half', 'blinkable');
 
 				subject_data_worker.postMessage({ press1Time: new Date(), visibilityStatePress1: document.visibilityState });
-
-				// show cost on top right corner if needed [After 1st click]
-				if (!!logic.getCost(runData, settings, logic.cost_on.click1)) {
-					var indicator_id = dom_helper.duplicate('cost_indicator_1_');
-					dom_helper.set_text(indicator_id, "-" + logic.getCost(runData, settings, logic.cost_on.click1));
-					dom_helper.show(indicator_id);
-					setTimeout(() => {
-						if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
-						dom_helper.hide(indicator_id)
-					}, settings.durations.costAnim)
-				}
 
 				document.getElementById('ice_lower').style.animationDuration = String(settings.durations.surface_disappearance / 1000) + 's'
 				document.getElementById('ice_lower').style.animationName = "ice_breaking";
@@ -216,17 +219,6 @@ async function runApp() {
 
 				subject_data_worker.postMessage({ press2Time: new Date(), visibilityStatePress2: document.visibilityState });
 
-				// show cost on top right corner if needed [After 2nd click]
-				if (!!logic.getCost(runData, settings, logic.cost_on.click2)) {
-					var indicator_id = dom_helper.duplicate('cost_indicator_1_');
-					dom_helper.set_text(indicator_id, "-" + logic.getCost(runData, settings, logic.cost_on.click2));
-					dom_helper.show(indicator_id);
-					setTimeout(() => {
-						if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
-						dom_helper.hide(indicator_id)
-					}, settings.durations.costAnim)
-				}
-
 				document.getElementById('ice_upper').style.animationDuration = String(settings.durations.surface_disappearance / 1000) + 's'
 				document.getElementById('ice_upper').style.animationName = "ice_breaking"
 
@@ -238,8 +230,8 @@ async function runApp() {
 	// load the lottery animation frames (during the spaceship animation)
 	loadLotteryFrames(settings.lottery_N_frames)
 
-	// hide entrance graphics and sequence pressing inteface
-	await delay(settings.durations.entranceMessage);
+	// hide entrance graphics and show the sequence pressing inteface
+	if (settings.showEntranceRocket) { await delay(settings.durations.entranceMessage); }
 	if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
 	dom_helper.hide("spaceship");
 	dom_helper.show("upper_half");
@@ -335,3 +327,27 @@ async function runApp() {
 	// The trial is over (connection, two presses, animation, outcome): goodbye message and saving
 	finishTrial(runData)
 };
+
+// Full-screen image shown (1) when the participant reached the maximum number of entries for the day (settings.dailyLimit.image),
+// or (2) when it is too early for a new entry (kind === 'wait', settings.dailyLimit.waitImage). Both images are created by the researcher;
+// if an image cannot be loaded, a text message is shown instead.
+function showDailyLimitScreen(settings, kind) {
+	var cfg = settings.dailyLimit || {};
+	var old = document.getElementById('daily_limit_screen');
+	if (old) { old.remove(); }
+	var box = document.createElement('div');
+	box.id = 'daily_limit_screen';
+	box.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:' + (cfg.backgroundColor || '#000000') + ';';
+	var img = document.createElement('img');
+	img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
+	img.onerror = function () {
+		img.remove();
+		var p = document.createElement('p');
+		p.style.cssText = 'color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:6vw;text-align:center;padding:0 8vw;';
+		p.innerHTML = (kind === 'wait') ? (cfg.waitFallbackText || 'Please come back a little later.') : (cfg.fallbackText || 'See you tomorrow!');
+		box.appendChild(p);
+	};
+	img.src = (kind === 'wait') ? (cfg.waitImage || 'images/wait.jpg') : (cfg.image || 'images/blocked.jpg');
+	box.appendChild(img);
+	document.body.appendChild(box);
+}
