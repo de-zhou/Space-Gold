@@ -1207,3 +1207,60 @@ h1 {
     opacity: 0;
   }
 }
+
+/* ===================================================================== */
+/*  IDENTITÉ VISUELLE SPACE GOLD : fond bleu clair, texte bleu foncé,     */
+/*  police League Spartan (dossier League_Spartan à la racine du site)    */
+/*  Les images du jeu ne sont pas modifiées.                              */
+/* ===================================================================== */
+@font-face {
+  font-family: 'League Spartan';
+  src: url('League_Spartan/LeagueSpartan-VariableFont_wght.ttf') format('truetype'),
+       url('League_Spartan/static/LeagueSpartan-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --sg-bg: #d6f5ff;
+  --sg-text: #06465b;
+}
+
+html, body, button, input, p, h1, h2, h3, span, div {
+  font-family: 'League Spartan', Arial, Helvetica, sans-serif;
+}
+
+.bgApp, .bg_instructions {
+  background-color: var(--sg-bg) !important;
+  color: var(--sg-text);
+}
+
+h1, h2 { color: var(--sg-text); }
+
+/* écrans de message et d'erreur */
+.error_message_screen { background-color: var(--sg-bg) !important; }
+.error_message { color: var(--sg-text) !important; font-weight: 600; }
+
+/* message d'accueil / de fin d'essai */
+.text_box { background-color: rgba(255, 255, 255, 0.93) !important; border: 0.6vw solid var(--sg-text) !important; border-radius: 4vw; }
+.text_box2 { color: var(--sg-text) !important; }
+
+/* boîtes de dialogue */
+.dialog { background: var(--sg-bg) !important; border: 0.8vw solid var(--sg-text) !important; }
+.dialog_text { color: var(--sg-text) !important; font-weight: 600; }
+.dialog button { background: var(--sg-text) !important; color: #ffffff !important; border: none !important; border-radius: 3vw; font-weight: 700; }
+
+/* pages d'instructions, démonstration et questions */
+#instructionsButtons, #jspsych-instructions-next, #multipleChoiceQuestionsButtons, #repeatOrContinueButtons, .demoButton {
+  background-color: #ffffff !important;
+  color: var(--sg-text) !important;
+  border-color: var(--sg-text) !important;
+  font-weight: 700;
+}
+#instructionsButtons:active, #jspsych-instructions-next:active, #multipleChoiceQuestionsButtons:active, #repeatOrContinueButtons:active, .demoButton:active {
+  background-color: var(--sg-text) !important;
+  color: #ffffff !important;
+}
+.demoTextBox { background-color: var(--sg-bg) !important; border-color: var(--sg-text) !important; }
+.demoText, #repeatOrContinueText, #test_question_text, #post_test_msg { color: var(--sg-text) !important; font-weight: 600; }

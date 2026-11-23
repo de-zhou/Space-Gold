@@ -673,7 +673,7 @@ function finishTrial(runData) {
 	// show goodbye message:
 	dom_helper.add_css_class('welcome_msg', 'goodByeMessage'); // **
 	dom_helper.add_css_class('welcome_msg_txt', 'goodByeMessageTextSize'); // **
-	dom_helper.set_text('welcome_msg_txt', "See you next time"); //**
+	dom_helper.set_text('welcome_msg_txt', "À la prochaine !"); //**
 	dom_helper.show('welcome_msg'); // **
 
 	// collect end time and save subject data as results:

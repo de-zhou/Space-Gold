@@ -83,7 +83,7 @@ async function checkAndHandlePWA() {
             // Examples of how to manully allow reinstallation for specific subjects (can use one of this line instead of the following uncommented line)
             //if (!!subData.uniqueEntryID.length && subData.subId[subData.subId.length-1]!==313) {
             //if (!!subData.uniqueEntryID.length && subData.subId[subData.subId.length-1]!==131 && subData.subId[subData.subId.length-1]!==239) {
-            if (app_settings.one_time_link && !!subData.uniqueEntryID.length && !!subData.context.filter(x => x == app_settings.context).length) {
+            if (app_settings.one_time_link && !isTestSubject(app_settings) && !!subData.uniqueEntryID.length && !!subData.context.filter(x => x == app_settings.context).length) { // les participants de test (settings.test_subjects) peuvent réutiliser leur lien
                 location.replace('./used_link.html')
             } else {
                 caches.keys().then(function (keyList) {
@@ -98,20 +98,20 @@ async function checkAndHandlePWA() {
                 data_helper.init_session('gate', false);
                 await subject_data_worker.postMessage({ opennedInstallaitonPage: true, commitSession: true });
                 // show installation instructions (according to the device type):
-                document.getElementById('installation_guide').setAttribute('src', 'images/instructions/installation_guide_' + mobileOS + '.jpg')
+                document.getElementById('installation_guide').setAttribute('src', 'images/instructions/installation_guide_' + mobileOS + '.' + (app_settings.installation_guide_extension || 'png'))
             }
         } else {
             // show url is wrong message
             if (isSubID === "undefined") {
-                dom_helper.set_text('installationProblemMessage', 'The link is incomplete or incorrect. Please make sure you are using the complete link we sent you.')
+                dom_helper.set_text('installationProblemMessage', 'Le lien est incomplet ou incorrect. Merci de vérifier que vous utilisez bien le lien complet qui vous a été envoyé.')
 
                 dom_helper.show('installationProblem');
             }
             // Not a compatible device message or browser:
             else {
-                dom_helper.set_text('installationProblemMessage', 'Use this link<br>\
-                within the safari browser on an iphone<br>\
-                or within the chrome browser on an android device.')
+                dom_helper.set_text('installationProblemMessage', 'Ouvrez ce lien sur un téléphone,<br>\
+                dans le navigateur Safari (iPhone)<br>\
+                ou dans le navigateur Chrome (Android).')
                 dom_helper.show('installationProblem');
             }
         }

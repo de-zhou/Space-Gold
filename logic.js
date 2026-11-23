@@ -144,6 +144,11 @@ function getGroupSetting(settings, key) {
   return null;
 }
 
+// Participants de test (settings.test_subjects) : pas de limite d'essais, pas de délai, pas de fin d'étude, lien réutilisable
+function isTestSubject(settings) {
+  try { return (settings.test_subjects || []).indexOf(Number(data_helper.get_subject_id())) !== -1; } catch (e) { return false; }
+}
+
 function checkIfToHideOutcome(subData, hideOutcome, dayOfExperiment, isUnderManipulation, group, completeEntriesToday) {
   if (hideOutcome.hide) { // If to hide outcomes
     if (isUnderManipulation && hideOutcome.hideOnlyUnderManipulationPeriods) { // If it's manipulation time and hiding is set to only during manipulations.
@@ -352,7 +357,7 @@ var logic = {
 
         // End experiment & Exclusions
         // ---------------------------
-        var endExperiment = finishExperiment(subData, dayOfExperiment, dayToFinishExperiment, settings.nTrialsBeforeNotifyGameOver);
+        var endExperiment = isTestSubject(settings) ? false : finishExperiment(subData, dayOfExperiment, dayToFinishExperiment, settings.nTrialsBeforeNotifyGameOver);
 
         // Check if the subject should have been excluded (Was added when I decided not to use ongoing exclusions)
         // ----------------------------------------------
@@ -460,7 +465,7 @@ var logic = {
     // Daily limit: entries already completed today vs the maximum allowed for the group (settings.group_vars[group].dailyEntriesMax)
     let entriesTodayBefore = 0;
     let dailyEntriesMax = null;
-    if (!isDemo && !isFirstTime && !endExperiment) {
+    if (!isDemo && !isFirstTime && !endExperiment && !isTestSubject(settings)) {
       entriesTodayBefore = subData.endTime.filter((x, i) => (!!x || !!subData.outcomeTime[i]) && subData.day[i] === dayOfExperiment).length;
       dailyEntriesMax = getGroupSetting(settings, 'dailyEntriesMax');
     }
@@ -469,7 +474,7 @@ var logic = {
     // Minimum time between two entries of the same day (settings.group_vars[group].minMinutesBetweenEntries, counted from the end of the previous entry)
     let minMinutesBetweenEntries = null;
     let minutesSincePreviousEntry = null;
-    if (!isDemo && !isFirstTime && !endExperiment) {
+    if (!isDemo && !isFirstTime && !endExperiment && !isTestSubject(settings)) {
       minMinutesBetweenEntries = getGroupSetting(settings, 'minMinutesBetweenEntries');
       const timesToday = subData.endTime
         .map((x, i) => ((!!x || !!subData.outcomeTime[i]) && subData.day[i] === dayOfExperiment) ? new Date(x || subData.outcomeTime[i]).getTime() : null)
@@ -477,6 +482,16 @@ var logic = {
       if (timesToday.length) { minutesSincePreviousEntry = (Date.now() - Math.max(...timesToday)) / 60000; }
     }
     const waitRequired = !dailyLimitReached && minMinutesBetweenEntries !== null && minutesSincePreviousEntry !== null && minutesSincePreviousEntry < minMinutesBetweenEntries;
+
+    // Questionnaires (SRBAI : chaque jour ; SIMS : chaque semaine) : déjà remplis aujourd'hui / cette semaine d'après les données du serveur ?
+    const weekLength = settings.sims ? settings.sims.weekLength : 7;
+    const weekOfExperiment = Math.floor(((dayOfExperiment || 1) - 1) / weekLength) + 1;
+    let srbaiDoneToday = false;
+    let simsDoneThisWeek = false;
+    if (!isDemo && !isFirstTime && !isTestSubject(settings)) {
+      srbaiDoneToday = (subData.srbaiDay || []).some((d) => d === dayOfExperiment);
+      simsDoneThisWeek = (subData.simsDay || []).some((d) => !!d && (Math.floor((d - 1) / weekLength) + 1) === weekOfExperiment);
+    }
     let baselineAccumulatedReward = getBaselineAccumulatedReward(subData, settings); // Get Accumulated Reward Baseline (i.e., before this trial)
 
     var dataToSave = {
@@ -508,6 +523,9 @@ var logic = {
       minMinutesBetweenEntries: minMinutesBetweenEntries,
       minutesSincePreviousEntry: minutesSincePreviousEntry,
       waitRequired: waitRequired,
+      weekOfExperiment: weekOfExperiment,
+      srbaiDoneToday: srbaiDoneToday,
+      simsDoneThisWeek: simsDoneThisWeek,
     };
     return dataToSave;
   },

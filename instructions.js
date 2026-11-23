@@ -48,7 +48,7 @@ async function preloadInstructionImages(totalPages = getInstructionPages().lengt
 	});
 	if (!!Array.from(document.images).filter(img => img.id !== "installation_guide" && img.naturalHeight === 0).length) { // check that all images were successfully loaded - detects if there was an error in loading an image
 		console.log('Problem in image loading');
-		alert('There was a problem loading. Try closing the app completely and reopening it.')
+		alert('Un problème de chargement est survenu. Essayez de fermer complètement l’application puis de la rouvrir.')
 		return
 	}
 };
@@ -58,7 +58,7 @@ var check_consent = function (elem) {
 		return true;
 	}
 	else {
-		alert("If you wish to participate, check the box next to 'I agree to participate in this study.'");
+		alert("Si vous souhaitez participer, cochez la case « J’accepte de participer à cette étude. »");
 		return false;
 	}
 	return false;
@@ -379,7 +379,7 @@ var settings = Object.assign({}, app_settings);
 		},
 		type: 'html-button-response',
 		trial_duration: undefined, // no time limit
-		choices: ['Back', 'Continue'],
+		choices: ['Retour', 'Continuer'],
 		timeline: [
 			{
 				stimulus: '',
@@ -447,11 +447,11 @@ var settings = Object.assign({}, app_settings);
 		},
 		type: 'html-button-response',
 		trial_duration: undefined, // no time limit
-		choices: ['Another round', 'Continue'],
+		choices: ['Un autre essai', 'Continuer'],
 		button_html: '<button id="repeatOrContinueButtons">%choice%</button>',
 		timeline: [
 			{
-				stimulus: '<p id="repeatOrContinueText">The demo is over.<br><br>Would you like to perform another round or continue?<br><br></p>',
+				stimulus: '<p id="repeatOrContinueText">La démonstration est terminée.<br><br>Souhaitez-vous faire un autre essai ou continuer ?<br><br></p>',
 			}
 		]
 	};
@@ -472,11 +472,11 @@ var settings = Object.assign({}, app_settings);
 		},
 		type: 'html-button-response',
 		trial_duration: undefined, // no time limit
-		choices: ['Demo', 'Skip'],
+		choices: ['Démo', 'Passer'],
 		button_html: '<button id="repeatOrContinueButtons">%choice%</button>',
 		timeline: [
 			{
-				stimulus: '<p id="repeatOrContinueText">The instructions have been completed.<br><br>Do you want to do another demo round (of simulated logins to the app) or skip right to the questions?<br><br></p>',
+				stimulus: '<p id="repeatOrContinueText">Les instructions sont terminées.<br><br>Souhaitez-vous refaire une démonstration (connexions simulées à l’application) ou passer directement aux questions ?<br><br></p>',
 				on_finish: function (data) {
 					showAppDemo = !Number(jsPsych.data.get().last().select('button_pressed').values[0]);
 					askIfRepeatDemo = !!showAppDemo
@@ -517,15 +517,15 @@ var settings = Object.assign({}, app_settings);
 		},
 		type: 'html-button-response',
 		trial_duration: undefined, // no time limit
-		choices: ['Begin'],
+		choices: ['Commencer'],
 		button_html: '<button id="repeatOrContinueButtons">%choice%</button>',
 		timeline: [
 			{
-				stimulus: '<p id="repeatOrContinueText">We will now ask you a few questions to make sure the instructions are clear.<br><br> \
-				A correct answer will be marked in green. An incorrect answer will be marked in red and you will immediately see the correct answer marked in green.<br>\
-				A reminder: to be able to start playing the game you must answer all the questions correctly.\
-				If you do not answer everything correctly, you simply need to repeat the instructions and then the questions again.<br><br>\
-				Click Start to begin the questions.<br>\
+				stimulus: '<p id="repeatOrContinueText">Nous allons maintenant vous poser quelques questions pour vérifier que les instructions sont claires.<br><br> \
+				Une bonne réponse sera marquée en vert. Une mauvaise réponse sera marquée en rouge et vous verrez immédiatement la bonne réponse en vert.<br>\
+				Pour pouvoir commencer à jouer, vous devez répondre correctement à toutes les questions.\
+				Si ce n’est pas le cas, vous devrez simplement revoir les instructions, puis refaire les questions.<br><br>\
+				Cliquez sur Commencer pour débuter les questions.<br>\
 				</p>',
 			}
 		]
@@ -590,15 +590,15 @@ var settings = Object.assign({}, app_settings);
 			testPassed = !(relevantData.filter({ trialType: 'test_question', correct: false }).count() > 0)
 			if (testPassed) {
 				subject_data_worker.postMessage({ completedInstructions: true, commitSession: true });
-				msg = 'You answered all questions correctly.<br><br> \
-				Starting from this moment, you can access the app and try to acquire gold (and earn money).<br><br> \
-				After exiting the app now, the next entries will already be part of the game.<br><br> \
-				Good luck!<br><br> \
+				msg = 'Vous avez répondu correctement à toutes les questions.<br><br> \
+				À partir de maintenant, vous pouvez accéder à l’application et essayer de gagner de l’or.<br><br> \
+				Après avoir quitté l’application, les prochaines entrées feront déjà partie du jeu.<br><br> \
+				Bonne chance !<br><br> \
 				 <img id="post_instructions_test_image" src="images/game_title_image.jpg" />';
-				jsPsych.endExperiment('The experiment was ended because the user passed the test.');
+				jsPsych.endExperiment('Le test a été réussi.');
 			} else {
-				msg = 'Not all questions were answered correctly.<br><br> \
-				Please review the instructions and the demo again.';
+				msg = 'Certaines questions n’ont pas reçu une bonne réponse.<br><br> \
+				Veuillez revoir les instructions et la démonstration.';
 				this.show_clickable_nav = true
 			}
 			this.pages = ['<h2 id="post_test_msg">' + msg + '</h2>']

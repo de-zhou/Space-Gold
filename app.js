@@ -1,6 +1,8 @@
 async function runApp() {
 	appRunning = true; // used to determine whther a new session can start
 	clearTimeout(checkIfAppStartedRunning) // Stop checking (through the index.html that app started running on the first time)
+	var oldQuestionnaire = document.getElementById('questionnaire_overlay'); // remove a questionnaire left by a previous run
+	if (oldQuestionnaire) { oldQuestionnaire.remove(); }
 	var oldLimitScreen = document.getElementById('daily_limit_screen'); // remove the "daily limit" screen if it was shown by a previous run
 	if (oldLimitScreen) { oldLimitScreen.remove(); }
 	// ****************************************************************
@@ -121,6 +123,16 @@ async function runApp() {
 	// when we have uniqueEntryID, append stashed information to current sessionName
 	data_helper.appendStashedData();
 
+	// END OF THE STUDY (from day 29): only the end image is shown, no trial. The opening is recorded.
+	if (runData.endExperiment) {
+		subject_data_worker.postMessage({ subId: data_helper.get_subject_id(), day: runData.day, group: runData.group, studyEndOpenTime: startTime, dataLoadingTime: (new Date) - startTime, commitSession: true });
+		dom_helper.hide('app_will_load_soon');
+		dom_helper.hide('loading_animation');
+		showDailyLimitScreen(settings, 'end');
+		appRunning = false;
+		return;
+	}
+
 	// DAILY LIMIT: the participant already did all the entries allowed today -> show the "blocked" image and stop here
 	if (runData.dailyLimitReached) {
 		if (!settings.dailyLimit || settings.dailyLimit.logBlockedAttempts !== false) { // record the attempt (it is NOT counted as an entry)
@@ -128,6 +140,8 @@ async function runApp() {
 		}
 		dom_helper.hide('app_will_load_soon');
 		dom_helper.hide('loading_animation');
+		await runDueQuestionnaires(runData); // questionnaires still due (the participant left the app before answering)
+		if (identifiersToClean.includes(identifier)) { appRunning = false; return };
 		showDailyLimitScreen(settings);
 		appRunning = false;
 		return;
@@ -140,6 +154,8 @@ async function runApp() {
 		}
 		dom_helper.hide('app_will_load_soon');
 		dom_helper.hide('loading_animation');
+		await runDueQuestionnaires(runData);
+		if (identifiersToClean.includes(identifier)) { appRunning = false; return };
 		showDailyLimitScreen(settings, 'wait');
 		appRunning = false;
 		return;
@@ -268,28 +284,12 @@ async function runApp() {
 
 	if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
 
-	if (runData.endExperiment) { // a message that game has ended (after the lottery gif for now, so I can assess multiple entries after completion)
-		// get data again to verify it was updated on the server on this run
-		var updatedSubData = await data_helper.get_subject_data(true).catch(function (e) {
-			console.log('error getting subject data');
-			console.log(e);
-		});
-		if (new Date(updatedSubData.startTime[updatedSubData.startTime.length - 1]).getTime() === startTime.getTime()) { // making sure the data was sent to the server by comparing the start times.
-			subject_data_worker.postMessage({ endExperimentAlertTime: new Date() })
-			await dialog_helper.show(settings.text.endExperiment(runData.baselineAccumulatedReward), img_id = '', confirmation = '', delayBeforeClosing = 0, resolveOnlyAfterDelayBeforeClosing = false, preventFeedBack = true);
-		} else { // if there is no connection to the server:
-			subject_data_worker.postMessage({ noConnectionToendExperimentAlertTime: new Date() })
-			await dialog_helper.show(settings.text.noConnectionToEndExperiment, img_id = '', confirmation = '', delayBeforeClosing = 0, resolveOnlyAfterDelayBeforeClosing = false, preventFeedBack = true);
-		}
-		return;
-	}
-
 	if (!runData.hideOutcome) { // presenting the outcome:
 		if (runData.isWin) {
-			var outcomeText = "You found " + runData.reward + (runData.reward === 1 ? " gold unit" : " gold units")
+			var outcomeText = "Vous avez trouvé " + runData.reward + (runData.reward === 1 ? " unité d’or" : " unités d’or")
 			var outcomeElementID = 'outcome_win'
 		} else if (runData.isLoss) {
-			var outcomeText = "You lost " + runData.reward + (runData.reward === 1 ? " gold unit" : " gold units")
+			var outcomeText = "Vous avez perdu " + runData.reward + (runData.reward === 1 ? " unité d’or" : " unités d’or")
 			var outcomeElementID = 'outcome_loss'
 		} else {
 			var outcomeText = "No gold this time"
@@ -324,7 +324,11 @@ async function runApp() {
 	if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
 	//
 
-	// The trial is over (connection, two presses, animation, outcome): goodbye message and saving
+	// The questionnaires that are due (SRBAI every day, SIMS every week) come after the outcome
+	await runDueQuestionnaires(runData);
+	if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
+
+	// The trial is over (connection, two presses, animation, outcome, questionnaires): goodbye message and saving
 	finishTrial(runData)
 };
 
@@ -337,17 +341,17 @@ function showDailyLimitScreen(settings, kind) {
 	if (old) { old.remove(); }
 	var box = document.createElement('div');
 	box.id = 'daily_limit_screen';
-	box.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:' + (cfg.backgroundColor || '#000000') + ';';
+	box.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:' + (cfg.backgroundColor || '#d6f5ff') + ';';
 	var img = document.createElement('img');
 	img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
 	img.onerror = function () {
 		img.remove();
 		var p = document.createElement('p');
-		p.style.cssText = 'color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:6vw;text-align:center;padding:0 8vw;';
-		p.innerHTML = (kind === 'wait') ? (cfg.waitFallbackText || 'Please come back a little later.') : (cfg.fallbackText || 'See you tomorrow!');
+		p.style.cssText = 'color:#06465b;font-family:\'League Spartan\',Arial,Helvetica,sans-serif;font-weight:600;font-size:6vw;text-align:center;padding:0 8vw;';
+		p.innerHTML = (kind === 'end') ? (cfg.endFallbackText || 'L’étude est terminée.') : (kind === 'wait') ? (cfg.waitFallbackText || 'Merci de revenir un peu plus tard.') : (cfg.fallbackText || 'À demain !');
 		box.appendChild(p);
 	};
-	img.src = (kind === 'wait') ? (cfg.waitImage || 'images/wait.jpg') : (cfg.image || 'images/blocked.jpg');
+	img.src = (kind === 'end') ? (cfg.endImage || 'images/study_end.jpg') : (kind === 'wait') ? (cfg.waitImage || 'images/wait.jpg') : (cfg.image || 'images/blocked.jpg');
 	box.appendChild(img);
 	document.body.appendChild(box);
 }

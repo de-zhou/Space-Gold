@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 
 <head>
     <title>App</title>
@@ -9,7 +9,7 @@
     <script src="mapping_key_to_subId.js"></script>
     <script src="ongoing_exclusion.js"></script>
     <script src="settings.js"></script>
-    <script> document.title = app_settings.context.replace(/_/g, ' '); </script> <!-- set the page name dinamically-->
+    <script> document.title = app_settings.App_HTML_title(); </script> <!-- set the page name dinamically-->
     <script src="helpers.js"></script>
     <script src="logic.js"></script>
     <script src="data_submition_worker.js"></script>
@@ -49,7 +49,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="App">
+    <meta name="apple-mobile-web-app-title" content="Space Gold">
 
     <!-- Set splash screen for iphones: -->
     <!------------------------------------------------------------------>
@@ -98,13 +98,14 @@
             location.reload()
         }, 7000)
     </script>
+    <script src="questionnaires.js"></script>
     <script src="app.js"></script>
 </head>
 
 <body id="background" class="bgApp" onload="runApp()">
     <!-- Loading Screen -->
     <div id="app_will_load_soon" class="centered appIsLoading">
-        <h1>Loading...</h1>
+        <h1>Chargement…</h1>
     </div>
     <div id="loading_animation">
         <div class="lds-ellipsis">
@@ -148,7 +149,7 @@
             <img id="game_begins_image" class="appear hidden" src="images/game_title_image.jpg" />
             <p id="dialog_confirmation_msg" class="dialog_text hidden">Hello, this is a dialog confirmation message</p>
             <input id="dialog_response_text" type="text" autocomplete="off" />
-            <div><button id="dialog_ok_button">Confirm</button></div>
+            <div><button id="dialog_ok_button">Confirmer</button></div>
         </div>
     </div>
 </body>

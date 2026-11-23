@@ -1,21 +1,24 @@
 // ============================================================================
-// FICHIER DE RÉGLAGES - VERSION RÉELLE DE L'ÉTUDE
+// FICHIER DE RÉGLAGES - SPACE GOLD (VERSION RÉELLE DE L'ÉTUDE)
 //
-// 1) A REMPLACER avant de générer les liens (3 endroits juste en dessous) :
-//      - les deux adresses du serveur (celles que Render te donnera)
-//      - l'adresse du site GitHub Pages
-//      - le nom de l'appli (doit être IDENTIQUE au nom du dépôt GitHub)
-// 2) Les deux conditions (A et B) sont décrites dans group_vars : valeur de la récompense,
-//    nombre maximum de connexions par jour, et pages d'instructions (instruction_pages).
+// Les deux conditions sont décrites dans group_vars (valeur de la récompense, nombre maximum de
+// connexions par jour, délai entre deux connexions) et dans instruction_pages (images d'instructions).
+// Les questionnaires SRBAI (chaque jour) et SIMS (chaque semaine) se règlent dans les blocs srbai et sims.
 // ============================================================================
 window.app_settings = {
   server: {
-    base_address: "https://A_REMPLACER.onrender.com",
-    ws_base_address: "wss://A_REMPLACER.onrender.com"
+    base_address: "https://space-gold.onrender.com",
+    ws_base_address: "wss://space-gold.onrender.com"
   },
-  app_base_adress: "https://A_REMPLACER.github.io",
-  context: "A_REMPLACER",
+  app_base_adress: "https://de-zhou.github.io",
+  context: "Space-Gold", // doit être identique au nom du dépôt GitHub (Space-Gold) : il sert dans l'adresse du site
+  app_display_name: "Space Gold", // nom affiché sous l'icône et dans le titre de la page
   one_time_link: true,
+  installation_guide_extension: "png", // guides d'installation : images/instructions/installation_guide_iOS.png et installation_guide_Android.png
+  // Participants de TEST : leur lien est réutilisable par plusieurs personnes, sans limite d'essais par jour,
+  // sans délai d'attente, sans fin d'étude, et les questionnaires leur sont reposés à chaque essai.
+  // Ne pas les inclure dans l'analyse des données (le numéro 299 est dans la tranche du groupe B).
+  test_subjects: [299],
   showEntranceRocket: false, // true = la fusée atterrit à chaque entrée (ancienne version) ; false = on passe directement aux deux appuis
   downloadAllToLocalStorage: false,
   minDailyDataPointsToStoreLocally: 20,
@@ -56,14 +59,14 @@ window.app_settings = {
   // Le total possible par jour est le même (10 or) dans les deux conditions.
   group_vars: {
     group_A: {
-      dayToFinishExperiment: 14,
+      dayToFinishExperiment: 29, // 28 jours de jeu : à partir du jour 29, l'appli affiche l'écran de fin
       daysWithControlManipulations: [],
       daysWithDevaluationManipulations: [],
       dailyEntriesMax: 1,   // nombre maximum d'essais par jour ; ensuite l'appli est bloquée jusqu'au lendemain (5 h du matin)
       rewardPerWin: 10      // valeur d'une récompense
     },
     group_B: {
-      dayToFinishExperiment: 14,
+      dayToFinishExperiment: 29, // 28 jours de jeu : à partir du jour 29, l'appli affiche l'écran de fin
       daysWithControlManipulations: [],
       daysWithDevaluationManipulations: [],
       dailyEntriesMax: 10,
@@ -79,31 +82,47 @@ window.app_settings = {
   // Écran affiché quand le maximum d'essais du jour est atteint : une image que tu crées toi-même.
   // Place ton image dans le dossier images, sous le nom indiqué ci-dessous (ou change le nom ici).
   dailyLimit: {
-    image: "images/blocked.jpg",
-    backgroundColor: "#000000",     // couleur autour de l'image si elle ne remplit pas tout l'écran
+    image: "images/blocked.jpg",    // écran de fin de journée (maximum d'essais atteint)
+    waitImage: "images/wait.jpg",   // écran "trop tôt" (groupe B : moins de 30 minutes depuis l'essai précédent)
+    endImage: "images/study_end.jpg", // écran de fin d'étude (à partir du jour 29)
+    backgroundColor: "#d6f5ff",     // couleur autour de l'image si elle ne remplit pas tout l'écran
     logBlockedAttempts: true,       // enregistrer chaque tentative d'ouverture bloquée (heure, jour, nombre d'essais déjà faits)
-    fallbackText: "You have completed your sessions for today.<br><br>See you tomorrow!", // affiché seulement si l'image est introuvable
-    waitImage: "images/wait.jpg",   // image affichée quand c'est trop tôt pour un nouvel essai (groupe B : moins de 30 minutes depuis le précédent)
-    waitFallbackText: "Please come back a little later." // affiché seulement si l'image d'attente est introuvable
+    // Textes de secours : affichés seulement si l'image correspondante est introuvable
+    fallbackText: "Vous avez terminé pour aujourd’hui.<br><br>À demain !",
+    waitFallbackText: "Merci de revenir un peu plus tard.",
+    endFallbackText: "L’étude est terminée.<br><br>Vous allez recevoir un mail de récapitulatif.<br>Merci pour votre participation !"
   },
-  // [NOUVEAU] questionnaire d'automaticité (SRBAI), posé après l'essai, au maximum une fois par jour
-  // ATTENTION : vérifier la formulation avec la version officielle validée (Gardner et al., 2012) et la langue des participants.
-  srbai: {
+  // Réglages communs aux questionnaires (SRBAI et SIMS), posés après l'essai.
+  // Ils sont posés à la fin d'un essai, ou à l'ouverture suivante si le participant a quitté l'appli avant d'avoir répondu.
+  questionnaires: {
     enabled: true,
-    everyNDays: 1, // une fois par jour pour tous les participants
-    title: "Question",
-    stem: "Opening the app when I see it is something...",
-    items: [
-      "I do automatically",
-      "I do without having to consciously remember",
-      "I do without thinking",
-      "I start doing before I realise I'm doing it"
-    ],
+    randomizeOrder: false,          // false = énoncés dans l'ordre normal ; true = ordre mélangé à chaque passation (l'ordre vu est alors enregistré)
     scaleMax: 7,
-    minLabel: "Strongly disagree",
-    maxLabel: "Strongly agree",
-    nextText: "Next",
-    finishText: "Finish"
+    title: "Question",
+    minLabel: "Pas du tout d’accord",
+    maxLabel: "Tout à fait d’accord",
+    nextText: "Suivant",
+    finishText: "Terminer"
+  },
+  // SRBAI : une fois par jour (premier essai du jour), après l'essai
+  srbai: {
+    stem: "Ouvrir l’application quand je la vois sur mon écran est quelque chose…",
+    items: [
+      "… que je fais automatiquement",
+      "… que je fais sans avoir besoin d’en prendre conscience",
+      "… que je fais sans réfléchir",
+      "… que je commence à faire avant même de me rendre compte que je le fais"
+    ]
+  },
+  // SIMS (version adaptée) : une fois par semaine (jours 1, 8, 15, 22 de chaque participant), après le SRBAI
+  sims: {
+    stem: "Pourquoi avez-vous ouvert l’application ?",
+    weekLength: 7,
+    items: [
+      "Parce que je trouve qu’ouvrir l’application est intéressant et plaisant",
+      "Parce que je sens que je suis supposé·e le faire",
+      "Parce que je souhaite obtenir de l’or dans l’application et gagner la loterie"
+    ]
   },
   feedback_in_devalued_actions: false,
   entry_to_manipulate_in: 0,
@@ -165,17 +184,14 @@ window.app_settings = {
     surface_disappearance: 700
   },
   text: {
-    confirmationCodeTextMessage: "\nPlease enter the following letters to confirm that you have read the message: ",
-    realGameBegins: "The real game starts now.<br>The gold you will accumulate from now on is worth real money.<br><br>Good Luck!",
+    confirmationCodeTextMessage: "\nVeuillez saisir les lettres suivantes pour confirmer que vous avez lu le message : ",
+    realGameBegins: "Le vrai jeu commence maintenant.<br>L’or que vous accumulerez à partir de maintenant sera converti en tickets pour le tirage au sort.<br><br>Bonne chance !",
     endExperiment: function (baselineAccumulatedReward) {
-			return 'The game is over. Thank you for participating!' + '<br><br>' +
-				'You managed to bring to earth '
-				+ baselineAccumulatedReward // This was designed to replace the line below.
-				// + logic.calculateReward(subData, app_settings.coinCollectionTask, dayToFinishExperiment)
-				+ ' Gold units!'
-		},
-    noConnectionToEndExperiment: "Unable to connect to the server.<br><br>Please verify you have network connection and try again.",
-    loadingDataError: "There is a problem!<br><br>A. Please make sure you are connected to the internet.<br>B. Try closing the app and reentering.<br><br>If it is still not working, please contact [NAME] at: [PHONENUMBER]."
+      return 'L’étude est terminée. Merci de votre participation !' + '<br><br>' +
+        'Vous avez rapporté ' + baselineAccumulatedReward + ' unités d’or !'
+    },
+    noConnectionToEndExperiment: "Impossible de se connecter au serveur.<br><br>Vérifiez votre connexion internet puis réessayez.",
+    loadingDataError: "Un problème est survenu !<br><br>A. Vérifiez que vous êtes bien connecté·e à internet.<br>B. Essayez de fermer l’application puis de la rouvrir.<br><br>Si cela ne fonctionne toujours pas, contactez dzhou@parisnanterre.fr."
   },
   allowInstructions: true,
   allowDemo: true,
@@ -203,11 +219,11 @@ window.app_settings = {
   },
   demoCycleSupportingText: {
     0: {
-      a: "We prepared a demo for you with a virtual screen that simulates a smartphone.<br> Tap the app to launch your spaceship to a gold-seeking mission.",
-      b: "Now tap the bottom half of the screen and then on the top half to remove the ice layer and enable the gold search. After a few seconds of searching, the outcome will be presented.",
-      c: "In this round you have found gold!<br>Immediately afterwards, the end message appears (\"See you next time\"). When this message appears, it means that the search result has been recorded and you can exit the app. To exit the app in this demo, tap the home button on the virtual smartphone."
+      a: "Nous avons préparé une démonstration avec un écran virtuel qui simule un smartphone.<br>Touchez l’application pour lancer votre vaisseau à la recherche d’or.",
+      b: "Touchez maintenant la moitié basse de l’écran, puis la moitié haute, pour retirer la couche de glace et lancer la recherche d’or. Après quelques secondes de recherche, le résultat s’affiche.",
+      c: "Cette fois, vous avez trouvé de l’or !<br>Juste après, le message de fin apparaît (« À la prochaine ! »). Quand ce message s’affiche, cela signifie que le résultat de la recherche a bien été enregistré et que vous pouvez quitter l’application. Pour quitter l’application dans cette démonstration, touchez le bouton d’accueil du smartphone virtuel."
     },
-    1: "Now you will enter (and exit) the app once more. Every entry works exactly the same way: you tap the bottom half and then the top half of the screen, and the outcome is presented."
+    1: "Vous allez maintenant entrer (et sortir) de l’application une nouvelle fois. Chaque entrée se déroule exactement de la même façon : vous touchez la moitié basse puis la moitié haute de l’écran, et le résultat s’affiche."
   },
   instructionsFileName: "instructions.html",
   // Images d'instructions vues par chaque groupe, dans l'ordre. Chaque nom correspond au fichier
@@ -224,70 +240,70 @@ window.app_settings = {
     var g = this.group_vars[group] || this.group_vars.group_A;
     var perDay = g.dailyEntriesMax;
     var reward = g.rewardPerWin;
-    var units = function (n) { return n + (n === 1 ? " gold unit" : " gold units"); };
+    var units = function (n) { return n + (n === 1 ? " unité d’or" : " unités d’or"); };
     var otherAmounts = [1, 5, 10, 15].filter(function (n) { return n !== reward; }).slice(0, 2);
     var questions = {
       1: {
-        question: "How many times a day can I enter the app to look for gold?",
-        correct_answer: perDay === 1 ? "Once a day." : "Up to " + perDay + " times a day.",
-        distractor_1: "As many times as I want.",
-        distractor_2: perDay === 2 ? "Once a day." : "Twice a day.",
-        distractor_3: "Only on some days of the week."
+        question: "Combien de fois par jour puis-je ouvrir l’application pour chercher de l’or ?",
+        correct_answer: perDay === 1 ? "Une seule fois par jour." : "Jusqu’à " + perDay + " fois par jour.",
+        distractor_1: "Autant de fois que je le souhaite.",
+        distractor_2: perDay === 2 ? "Une seule fois par jour." : "Deux fois par jour.",
+        distractor_3: "Seulement certains jours de la semaine."
       },
       2: {
-        question: "How much gold am I given each time I find gold?",
+        question: "Combien d’or reçois-je à chaque fois que je trouve de l’or ?",
         correct_answer: units(reward) + ".",
         distractor_1: units(otherAmounts[0]) + ".",
         distractor_2: units(otherAmounts[1]) + ".",
-        distractor_3: "The amount changes every time."
+        distractor_3: "La quantité change à chaque fois."
       },
       3: {
-        question: "Is there a cost to enter the app?",
-        correct_answer: "No, entering the app is free.",
-        distractor_1: "Yes, it costs 1 gold unit.",
-        distractor_2: "Yes, it costs 10 gold units.",
-        distractor_3: "Yes, the cost changes every time."
+        question: "Ouvrir l’application a-t-il un coût ?",
+        correct_answer: "Non, ouvrir l’application est gratuit.",
+        distractor_1: "Oui, cela coûte 1 unité d’or.",
+        distractor_2: "Oui, cela coûte 10 unités d’or.",
+        distractor_3: "Oui, le coût change à chaque fois."
       },
       4: {
-        question: "What do I have to do once the app is open?",
-        correct_answer: "Tap the bottom half of the screen, and then the top half.",
-        distractor_1: "Tap the top half of the screen, and then the bottom half.",
-        distractor_2: "Tap the middle of the screen as many times as I can.",
-        distractor_3: "Nothing, I just have to wait."
+        question: "Que dois-je faire une fois l’application ouverte ?",
+        correct_answer: "Toucher la moitié basse de l’écran, puis la moitié haute.",
+        distractor_1: "Toucher la moitié haute de l’écran, puis la moitié basse.",
+        distractor_2: "Toucher le milieu de l’écran autant de fois que possible.",
+        distractor_3: "Rien, je dois simplement attendre."
       },
       5: {
-        question: "When can I close the app?",
-        correct_answer: "When the message \"See you next time\" appears.",
-        distractor_1: "As soon as I see the outcome.",
-        distractor_2: "Right after the two taps.",
-        distractor_3: "After one minute."
+        question: "Quand puis-je fermer l’application ?",
+        correct_answer: "Quand le message « À la prochaine ! » apparaît.",
+        distractor_1: "Dès que je vois le résultat.",
+        distractor_2: "Juste après les deux touchers.",
+        distractor_3: "Au bout d’une minute."
       },
       6: {
-        question: "What happens when I have already used the app the maximum number of times today?",
-        correct_answer: "I have to wait until the next day to use it again.",
-        distractor_1: "I can keep using it, but I will not earn gold.",
-        distractor_2: "I lose the gold I have collected.",
-        distractor_3: "The game ends for me.",
+        question: "Que se passe-t-il quand j’ai déjà utilisé l’application le nombre maximum de fois aujourd’hui ?",
+        correct_answer: "Je dois attendre le lendemain pour l’utiliser à nouveau.",
+        distractor_1: "Je peux continuer à l’utiliser, mais je ne gagne plus d’or.",
+        distractor_2: "Je perds l’or que j’ai collecté.",
+        distractor_3: "Le jeu s’arrête définitivement pour moi."
       },
       toRandomizeQuestions: false,
-      dont_know_answer: "I don't know."
+      dont_know_answer: "Je ne sais pas."
     };
     if (typeof g.minMinutesBetweenEntries === 'number') { // groupe avec un délai minimum entre deux essais
       var m = g.minMinutesBetweenEntries;
       var otherMinutes = [5, 10, 60, 120].filter(function (n) { return n !== m; }).slice(0, 2);
       questions[7] = {
-        question: "How much time do I have to wait between two entries?",
-        correct_answer: "At least " + m + " minutes.",
-        distractor_1: "At least " + otherMinutes[0] + " minutes.",
-        distractor_2: "At least " + otherMinutes[1] + " minutes.",
-        distractor_3: "No time: I can enter again right away."
+        question: "Combien de temps dois-je attendre entre deux ouvertures de l’application ?",
+        correct_answer: "Au moins " + m + " minutes.",
+        distractor_1: "Au moins " + otherMinutes[0] + " minutes.",
+        distractor_2: "Au moins " + otherMinutes[1] + " minutes.",
+        distractor_3: "Aucun délai : je peux la rouvrir tout de suite."
       };
     }
     return questions;
   },
   instructions_HTML_title: "Instructions",
   instructions_main_HTML_element: "instructions_iframe",
-  App_HTML_title: function () { return this.context.replace(/_/g, ' ') },
+  App_HTML_title: function () { return this.app_display_name || this.context.replace(/_/g, ' ') },
   App_main_HTML_element: "main_container",
-  dataVarList: ["serial","uniqueEntryID","subId","group","context","day","isWin","isLoss","reward","baselineAccumulatedReward","resetContainer","resetContainerConfirmationTime","manipulationToday","activateManipulation","isUnderManipulation","hideOutcome","isFirstTime","todayInitialOutcomes","startTime","press1Time","press2Time","outcomeTime","endTime","manipulationAlertTime","showInstructions","instructionsStartedFlag","completedInstructions","isDemo","demoTrialNum","isDialogOn","coin_task_finish_status","endExperiment","manipulationConfirmationTime","manipCheckAlertTime","manipChecConfirmationTime","localSessionId"]
+  dataVarList: ["serial","uniqueEntryID","subId","group","context","day","isWin","isLoss","reward","baselineAccumulatedReward","resetContainer","resetContainerConfirmationTime","manipulationToday","activateManipulation","isUnderManipulation","hideOutcome","isFirstTime","todayInitialOutcomes","startTime","press1Time","press2Time","outcomeTime","endTime","manipulationAlertTime","showInstructions","instructionsStartedFlag","completedInstructions","isDemo","demoTrialNum","isDialogOn","coin_task_finish_status","endExperiment","manipulationConfirmationTime","manipCheckAlertTime","manipChecConfirmationTime","srbaiDay","simsDay","localSessionId"]
 }
