@@ -144,7 +144,8 @@ function getGroupSetting(settings, key) {
   return null;
 }
 
-// Participants de test (settings.test_subjects) : pas de limite d'essais, pas de délai, pas de fin d'étude, lien réutilisable
+// Participants de test (settings.test_subjects) : ils suivent EXACTEMENT les mêmes règles que les vrais participants de leur groupe ;
+// seule différence : leur lien peut être réutilisé (voir gate_manager.js) et la mémoire locale des questionnaires est ignorée (voir questionnaires.js)
 function isTestSubject(settings) {
   try { return (settings.test_subjects || []).indexOf(Number(data_helper.get_subject_id())) !== -1; } catch (e) { return false; }
 }
@@ -357,7 +358,7 @@ var logic = {
 
         // End experiment & Exclusions
         // ---------------------------
-        var endExperiment = isTestSubject(settings) ? false : finishExperiment(subData, dayOfExperiment, dayToFinishExperiment, settings.nTrialsBeforeNotifyGameOver);
+        var endExperiment = finishExperiment(subData, dayOfExperiment, dayToFinishExperiment, settings.nTrialsBeforeNotifyGameOver);
 
         // Check if the subject should have been excluded (Was added when I decided not to use ongoing exclusions)
         // ----------------------------------------------
@@ -465,7 +466,7 @@ var logic = {
     // Daily limit: entries already completed today vs the maximum allowed for the group (settings.group_vars[group].dailyEntriesMax)
     let entriesTodayBefore = 0;
     let dailyEntriesMax = null;
-    if (!isDemo && !isFirstTime && !endExperiment && !isTestSubject(settings)) {
+    if (!isDemo && !isFirstTime && !endExperiment) {
       entriesTodayBefore = subData.endTime.filter((x, i) => (!!x || !!subData.outcomeTime[i]) && subData.day[i] === dayOfExperiment).length;
       dailyEntriesMax = getGroupSetting(settings, 'dailyEntriesMax');
     }
@@ -474,7 +475,7 @@ var logic = {
     // Minimum time between two entries of the same day (settings.group_vars[group].minMinutesBetweenEntries, counted from the end of the previous entry)
     let minMinutesBetweenEntries = null;
     let minutesSincePreviousEntry = null;
-    if (!isDemo && !isFirstTime && !endExperiment && !isTestSubject(settings)) {
+    if (!isDemo && !isFirstTime && !endExperiment) {
       minMinutesBetweenEntries = getGroupSetting(settings, 'minMinutesBetweenEntries');
       const timesToday = subData.endTime
         .map((x, i) => ((!!x || !!subData.outcomeTime[i]) && subData.day[i] === dayOfExperiment) ? new Date(x || subData.outcomeTime[i]).getTime() : null)
@@ -488,7 +489,7 @@ var logic = {
     const weekOfExperiment = Math.floor(((dayOfExperiment || 1) - 1) / weekLength) + 1;
     let srbaiDoneToday = false;
     let simsDoneThisWeek = false;
-    if (!isDemo && !isFirstTime && !isTestSubject(settings)) {
+    if (!isDemo && !isFirstTime) {
       srbaiDoneToday = (subData.srbaiDay || []).some((d) => d === dayOfExperiment);
       simsDoneThisWeek = (subData.simsDay || []).some((d) => !!d && (Math.floor((d - 1) / weekLength) + 1) === weekOfExperiment);
     }

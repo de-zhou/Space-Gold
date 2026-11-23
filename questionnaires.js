@@ -110,7 +110,7 @@ async function runDueQuestionnaires(runData) {
 	var settings = app_settings;
 	var common = settings.questionnaires;
 	if (!common || !common.enabled || !runData || runData.isDemo) { return; }
-	var test = isTestSubject(settings); // pour les participants de test : questionnaires posés à chaque essai
+	var test = isTestSubject(settings); // participants de test : seules les données du serveur comptent (la mémoire locale du téléphone est ignorée, pour pouvoir recommencer un test)
 	var day = runData.day || 1;
 	var week = runData.weekOfExperiment || 1;
 
