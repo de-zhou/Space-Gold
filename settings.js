@@ -14,7 +14,7 @@ window.app_settings = {
   context: "Space-Gold", // doit être identique au nom du dépôt GitHub (Space-Gold) : il sert dans l'adresse du site
   app_display_name: "Space Gold", // nom affiché sous l'icône et dans le titre de la page
   one_time_link: true,
-  installation_guide_extension: "png", // guides d'installation : images/instructions/installation_guide_iOS.png et installation_guide_Android.png
+  installation_guide_extension: "jpg", // guides d'installation : images/instructions/installation_guide_iOS.png et installation_guide_Android.png
   // Participants de TEST : leur lien est réutilisable par plusieurs personnes, sans limite d'essais par jour,
   // sans délai d'attente, sans fin d'étude, et les questionnaires leur sont reposés à chaque essai.
   // Ne pas les inclure dans l'analyse des données (le numéro 299 est dans la tranche du groupe B).
@@ -232,8 +232,8 @@ window.app_settings = {
   // Les deux avant-dernières et dernières pages (23 et 24) doivent rester en dernier :
   // la page 23 est celle qui annonce la démo.
   instruction_pages: {
-    group_A: [1, 2, 3, 4, 5, 6, 7, "8_A", "10_A", 12, 18, 19, 20, 21, 22, 23, 24],
-    group_B: [1, 2, 3, 4, 5, 6, 7, "8_B", "10_B", 12, 18, 19, 20, 21, 22, 23, 24]
+    group_A: [1, 2, 3, 4, 5, 6, 7, "8_A", 9, "10_A", 11, 12, 13],
+    group_B: [1, 2, 3, 4, 5, 6, 7, "8_B", 9, "10_B", 11, 12, 13]
   },
   lastInstructionsPageExplainsDemo: true,
   instructions_test_questions: function (group) {
