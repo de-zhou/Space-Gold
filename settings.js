@@ -254,8 +254,8 @@ window.app_settings = {
   // Les deux avant-dernières et dernières pages (23 et 24) doivent rester en dernier :
   // la page 23 est celle qui annonce la démo.
   instruction_pages: {
-    group_A: [1, 2, 3, 4, 5, 6, 7, "8_A", "10_A", 12, 18, 19, 20, 21, 22, 23, 24],
-    group_B: [1, 2, 3, 4, 5, 6, 7, "8_B", "10_B", 12, 18, 19, 20, 21, 22, 23, 24]
+    group_A: [1, 2, 3, 4, 5, 6, 7, "8_A", 9, "10_A", 11, 12, 13],
+    group_B: [1, 2, 3, 4, 5, 6, 7, "8_B", 9, "10_B", 11, 12, 13]
   },
   lastInstructionsPageExplainsDemo: true,
   instructions_test_questions: function (group) {
