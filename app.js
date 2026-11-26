@@ -133,6 +133,28 @@ async function runApp() {
 		return;
 	}
 
+	// SECOND APP BEFORE THE SWITCH DAY: this app is not in use yet. The very first opening is the installation check (shown once),
+	// the next ones show a neutral "not yet" screen. These openings are recorded but they do NOT start the study (no startTime).
+	if ((settings.app_role || 'first') === 'second' && (runData.showInstructions || runData.isFirstTime || !(runData.day >= settings.switch_day))) {
+		var secondKind = runData.installCheckDone ? 'early' : 'install_check';
+		subject_data_worker.postMessage({ subId: data_helper.get_subject_id(), appRole: 'second', day: runData.day, secondAppOpenTime: startTime, secondAppOpenKind: secondKind, dataLoadingTime: (new Date) - startTime, commitSession: true });
+		dom_helper.hide('app_will_load_soon');
+		dom_helper.hide('loading_animation');
+		showDailyLimitScreen(settings, secondKind === 'install_check' ? 'install_ok' : 'not_yet');
+		appRunning = false;
+		return;
+	}
+
+	// FIRST APP FROM THE SWITCH DAY: the game continues in the second app. Opening this one is a "slip" (recorded), an image is shown.
+	if ((settings.app_role || 'first') === 'first' && !runData.showInstructions && !runData.isFirstTime && runData.day >= settings.switch_day) {
+		subject_data_worker.postMessage({ subId: data_helper.get_subject_id(), appRole: 'first', day: runData.day, group: runData.group, slipTime: startTime, dataLoadingTime: (new Date) - startTime, commitSession: true });
+		dom_helper.hide('app_will_load_soon');
+		dom_helper.hide('loading_animation');
+		showDailyLimitScreen(settings, 'slip');
+		appRunning = false;
+		return;
+	}
+
 	// DAILY LIMIT: the participant already did all the entries allowed today -> show the "blocked" image and stop here
 	if (runData.dailyLimitReached) {
 		if (!settings.dailyLimit || settings.dailyLimit.logBlockedAttempts !== false) { // record the attempt (it is NOT counted as an entry)
@@ -141,6 +163,7 @@ async function runApp() {
 		dom_helper.hide('app_will_load_soon');
 		dom_helper.hide('loading_animation');
 		await runDueQuestionnaires(runData); // questionnaires still due (the participant left the app before answering)
+		await runSwitchReminder(runData);
 		if (identifiersToClean.includes(identifier)) { appRunning = false; return };
 		showDailyLimitScreen(settings);
 		appRunning = false;
@@ -155,6 +178,7 @@ async function runApp() {
 		dom_helper.hide('app_will_load_soon');
 		dom_helper.hide('loading_animation');
 		await runDueQuestionnaires(runData);
+		await runSwitchReminder(runData);
 		if (identifiersToClean.includes(identifier)) { appRunning = false; return };
 		showDailyLimitScreen(settings, 'wait');
 		appRunning = false;
@@ -326,17 +350,32 @@ async function runApp() {
 
 	// The questionnaires that are due (SRBAI every day, SIMS every week) come after the outcome
 	await runDueQuestionnaires(runData);
+	await runSwitchReminder(runData); // reminder (image + button) that the second app takes over soon
 	if (identifiersToClean.includes(identifier)) { appRunning = false; return }; // Stop running the function if the app is reloaded (and thus a new instance started)
 
 	// The trial is over (connection, two presses, animation, outcome, questionnaires): goodbye message and saving
 	finishTrial(runData)
 };
 
-// Full-screen image shown (1) when the participant reached the maximum number of entries for the day (settings.dailyLimit.image),
-// or (2) when it is too early for a new entry (kind === 'wait', settings.dailyLimit.waitImage). Both images are created by the researcher;
-// if an image cannot be loaded, a text message is shown instead.
+// Full-screen image shown instead of the game:
+//   (default) the maximum number of entries of the day is reached  - settings.dailyLimit.image
+//   'wait'       it is too early for a new entry                       - settings.dailyLimit.waitImage
+//   'end'        the study is over (day 29 and after)                  - settings.dailyLimit.endImage
+//   'slip'       first app after the switch day (the game moved to the second app) - settings.roleScreens.slipImage
+//   'install_ok' second app, first opening (installation check)       - settings.roleScreens.installOkImage
+//   'not_yet'    second app before the switch day                      - settings.roleScreens.notYetImage
+// All images are created by the researcher; if an image cannot be loaded, a text message is shown instead.
 function showDailyLimitScreen(settings, kind) {
 	var cfg = settings.dailyLimit || {};
+	var rs = settings.roleScreens || {};
+	var screens = {
+		end: [cfg.endImage || 'images/study_end.jpg', cfg.endFallbackText || 'L’étude est terminée.'],
+		wait: [cfg.waitImage || 'images/wait.jpg', cfg.waitFallbackText || 'Merci de revenir un peu plus tard.'],
+		slip: [rs.slipImage || 'images/slip.jpg', rs.slipFallbackText || 'Vous vous êtes trompé·e d’application.'],
+		install_ok: [rs.installOkImage || 'images/install_ok.jpg', rs.installOkFallbackText || 'Installation réussie ✓'],
+		not_yet: [rs.notYetImage || 'images/not_yet.jpg', rs.notYetFallbackText || 'Cette application n’est pas encore disponible.']
+	};
+	var chosen = screens[kind] || [cfg.image || 'images/blocked.jpg', cfg.fallbackText || 'Vous avez terminé pour aujourd’hui.<br><br>À demain !'];
 	var old = document.getElementById('daily_limit_screen');
 	if (old) { old.remove(); }
 	var box = document.createElement('div');
@@ -348,10 +387,10 @@ function showDailyLimitScreen(settings, kind) {
 		img.remove();
 		var p = document.createElement('p');
 		p.style.cssText = 'color:#06465b;font-family:\'League Spartan\',Arial,Helvetica,sans-serif;font-weight:600;font-size:6vw;text-align:center;padding:0 8vw;';
-		p.innerHTML = (kind === 'end') ? (cfg.endFallbackText || 'L’étude est terminée.') : (kind === 'wait') ? (cfg.waitFallbackText || 'Merci de revenir un peu plus tard.') : (cfg.fallbackText || 'À demain !');
+		p.innerHTML = chosen[1];
 		box.appendChild(p);
 	};
-	img.src = (kind === 'end') ? (cfg.endImage || 'images/study_end.jpg') : (kind === 'wait') ? (cfg.waitImage || 'images/wait.jpg') : (cfg.image || 'images/blocked.jpg');
+	img.src = chosen[0];
 	box.appendChild(img);
 	document.body.appendChild(box);
 }

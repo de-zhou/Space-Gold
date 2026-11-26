@@ -60,6 +60,13 @@ var dom_helper = {
 
 function prepareSubjectData(subjectData) {
 	var data = {};
+	// Les ouvertures de contrôle de l'appli 2 (champ secondAppOpenKind) ne doivent pas compter comme "dernière session" :
+	// on les met de côté, pour ne pas perturber la détection de la toute première entrée.
+	var secondAppOpenKinds = [];
+	if (Array.isArray(subjectData)) {
+		secondAppOpenKinds = subjectData.filter(function (x) { return x && x.secondAppOpenKind; }).map(function (x) { return x.secondAppOpenKind; });
+		subjectData = subjectData.filter(function (x) { return !(x && x.secondAppOpenKind); });
+	}
 	if (!!subjectData) {
 		// create one dictionnay for each line of data:
 		arrayOfObj = Object.entries(subjectData).map((e) => Object.assign(({ 'serial': e[0] }), e[1]));
@@ -89,6 +96,7 @@ function prepareSubjectData(subjectData) {
 		}
 	}
 
+	data.secondAppOpenKinds = secondAppOpenKinds;
 	return data;
 }
 

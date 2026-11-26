@@ -83,7 +83,13 @@ async function checkAndHandlePWA() {
             // Examples of how to manully allow reinstallation for specific subjects (can use one of this line instead of the following uncommented line)
             //if (!!subData.uniqueEntryID.length && subData.subId[subData.subId.length-1]!==313) {
             //if (!!subData.uniqueEntryID.length && subData.subId[subData.subId.length-1]!==131 && subData.subId[subData.subId.length-1]!==239) {
-            if (app_settings.one_time_link && !isTestSubject(app_settings) && !!subData.uniqueEntryID.length && !!subData.context.filter(x => x == app_settings.context).length) { // les participants de test (settings.test_subjects) peuvent réutiliser leur lien
+            // Le lien est à usage unique POUR CETTE APPLI (appli 1 ou appli 2) : on regarde si l'installation de cette appli a déjà été ouverte.
+            var thisAppRole = app_settings.app_role || 'first';
+            var installedRoles = subData.installedAppRole || [];
+            var alreadyInstalledThisApp = (thisAppRole === 'second')
+                ? installedRoles.indexOf('second') !== -1
+                : (installedRoles.indexOf('first') !== -1 || subData.startTime.some(function (x) { return !!x; }));
+            if (app_settings.one_time_link && !isTestSubject(app_settings) && alreadyInstalledThisApp) { // les participants de test (settings.test_subjects) peuvent réutiliser leur lien
                 location.replace('./used_link.html')
             } else {
                 caches.keys().then(function (keyList) {
@@ -96,9 +102,19 @@ async function checkAndHandlePWA() {
                 populate_manifest();
                 // Save a message so this link will be indicated as already used in the future.
                 data_helper.init_session('gate', false);
-                await subject_data_worker.postMessage({ opennedInstallaitonPage: true, commitSession: true });
+                await subject_data_worker.postMessage({ opennedInstallaitonPage: true, installedAppRole: (app_settings.app_role || 'first'), commitSession: true });
                 // show installation instructions (according to the device type):
                 document.getElementById('installation_guide').setAttribute('src', 'images/instructions/installation_guide_' + mobileOS + '.' + (app_settings.installation_guide_extension || 'png'))
+                // bouton "étape suivante" (appli 1 : lien vers l'installation de la deuxième application)
+                var nextStep = app_settings.installation_next_step;
+                if (nextStep && nextStep.url) {
+                    var nextButton = document.createElement('a');
+                    nextButton.id = 'next_step_button';
+                    nextButton.href = nextStep.url.replace('{key}', /[&?]subId=([^&]+)/.exec(location.search)[1]);
+                    nextButton.textContent = nextStep.buttonText || 'Étape suivante';
+                    nextButton.style.cssText = "position:fixed;left:6%;right:6%;bottom:3%;z-index:1000;display:block;text-align:center;padding:2.2vh 4vw;border-radius:12px;background:#06465b;color:#ffffff;font-family:'League Spartan',Arial,Helvetica,sans-serif;font-weight:700;font-size:5vw;text-decoration:none;";
+                    document.body.appendChild(nextButton);
+                }
             }
         } else {
             // show url is wrong message

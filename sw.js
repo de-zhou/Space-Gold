@@ -1,4 +1,5 @@
-const cacheName = 'version301';
+const cachePrefix = 'sg-first-'; // appli 2 : 'sg-second-' (chaque appli a son propre cache, sinon elles s'effaceraient mutuellement)
+const cacheName = cachePrefix + 'v303';
 
 // Call Install Event
 self.addEventListener('install', e => {
@@ -15,7 +16,7 @@ self.addEventListener('activate', e => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cache => {
-                    if (cache !== cacheName) {
+                    if ((cache.indexOf(cachePrefix) === 0 && cache !== cacheName) || /^version[0-9]+$/.test(cache)) { // anciens caches de cette appli
                         console.log('Service Worker: Clearing Old Cache');
                         return caches.delete(cache);
                     }

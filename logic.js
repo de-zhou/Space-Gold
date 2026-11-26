@@ -259,6 +259,8 @@ var logic = {
   },
   initialize: function (subData, settings) {
     const noDataYet = !Object.keys(subData).length; // check if this is the first entry
+    // Deuxième appli : le contrôle d'installation (ouverture unique du jour 1) a-t-il déjà été fait ?
+    const installCheckDone = (subData.secondAppOpenKinds || []).indexOf('install_check') !== -1;
 
     // check if running localy or on the server and determine if called from within the instructions (for the the embedded demo):
     var isCalledFromInstructions = this.isCalledFromInstructions();
@@ -274,6 +276,7 @@ var logic = {
         var dataToSave = {
           subId: data_helper.get_subject_id(),
           showInstructions: true,
+          installCheckDone: installCheckDone,
         };
         return dataToSave;
       }
@@ -525,6 +528,8 @@ var logic = {
       minutesSincePreviousEntry: minutesSincePreviousEntry,
       waitRequired: waitRequired,
       weekOfExperiment: weekOfExperiment,
+      installCheckDone: installCheckDone,
+      switchReminderDone: (subData.switchReminderDay || []).some((d) => !!d),
       srbaiDoneToday: srbaiDoneToday,
       simsDoneThisWeek: simsDoneThisWeek,
     };

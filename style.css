@@ -1264,3 +1264,11 @@ h1, h2 { color: var(--sg-text); }
 }
 .demoTextBox { background-color: var(--sg-bg) !important; border-color: var(--sg-text) !important; }
 .demoText, #repeatOrContinueText, #test_question_text, #post_test_msg { color: var(--sg-text) !important; font-weight: 600; }
+
+
+/* Images d'instructions et guides d'installation : elles gardent leurs proportions (plus d'étirement).
+   Si l'image n'a pas exactement le format de l'écran, la bande restante prend la couleur de fond. */
+img[id^="instructionImage-"], #installation_guide {
+  object-fit: contain;
+  background-color: var(--sg-bg, #d6f5ff);
+}

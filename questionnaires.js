@@ -140,3 +140,48 @@ async function runDueQuestionnaires(runData) {
 		appRunning = true;
 	}
 }
+
+
+// Rappel du changement d'application (appli 1 uniquement) : une image et un bouton "J'ai pris connaissance".
+// Affiché après l'essai, à partir du jour settings.reminder_from_day, jusqu'à ce que le participant ait confirmé (avant settings.switch_day).
+function qShowNotice(rs) {
+	return new Promise(function (resolve) {
+		qInjectStyle();
+		var overlay = document.createElement('div');
+		overlay.id = 'questionnaire_overlay';
+		overlay.style.flexDirection = 'column';
+		var img = document.createElement('img');
+		img.style.cssText = 'max-width:100%;max-height:78%;object-fit:contain;';
+		var btn = document.createElement('button');
+		btn.id = 'q_next';
+		btn.style.marginTop = '3vh';
+		btn.textContent = rs.reminderButtonText || 'J’ai pris connaissance';
+		img.onerror = function () {
+			img.remove();
+			var p = document.createElement('p');
+			p.style.cssText = 'font-size:6vw;font-weight:600;text-align:center;padding:0 8vw;';
+			p.innerHTML = rs.reminderFallbackText || 'Rappel : à partir de demain, vous devrez utiliser la deuxième application.';
+			overlay.insertBefore(p, btn);
+		};
+		btn.onclick = function () { overlay.remove(); resolve(); };
+		img.src = rs.reminderImage || 'images/reminder.jpg';
+		overlay.appendChild(img);
+		overlay.appendChild(btn);
+		document.body.appendChild(overlay);
+	});
+}
+
+async function runSwitchReminder(runData) {
+	var settings = app_settings;
+	if ((settings.app_role || 'first') !== 'first' || !runData || runData.isDemo) { return; }
+	var day = runData.day || 1;
+	if (!(day >= settings.reminder_from_day && day < settings.switch_day)) { return; }
+	var test = isTestSubject(settings);
+	if (runData.switchReminderDone || (!test && qLocalDone('reminder', 1))) { return; }
+	appRunning = false;
+	var shownTime = new Date();
+	await qShowNotice(settings.roleScreens || {});
+	subject_data_worker.postMessage({ switchReminderShownTime: shownTime, switchReminderTime: new Date(), switchReminderDay: day, commitSession: true });
+	qMarkDone('reminder', 1);
+	appRunning = true;
+}
